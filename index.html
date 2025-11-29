@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RifqyStatus - Server Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Space Grotesk', sans-serif; background-color: #09090b; color: #e4e4e7; }
+        .glass { background: rgba(39, 39, 42, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; }
+        .animate-blink { animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-12 px-4 selection:bg-emerald-500/30">
+
+    <div class="w-full max-w-5xl">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 pb-6 border-b border-zinc-800">
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">RifqyStatus 📡</h1>
+                <p class="text-zinc-500 mt-1">Live uptime monitoring for RifqyDev Network.</p>
+            </div>
+            <div class="mt-4 md:mt-0 text-right">
+                <div id="last-updated" class="text-xs font-mono text-zinc-500">Waiting for data...</div>
+                <div class="flex items-center justify-end gap-2 mt-1">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-xs text-emerald-500 font-bold">SYSTEM ACTIVE</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="status-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="col-span-full py-20 text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 mb-4"></div>
+                <p class="text-zinc-500 animate-pulse">Menghubungi Satelit Vercel...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =================================================================
+        // GANTI LINK INI DENGAN LINK VERCEL KAMU SETELAH DEPLOY
+        // Contoh: https://rifqystatus.vercel.app/api/status
+        // =================================================================
+        const API_URL = 'https://GANTI-DENGAN-NAMA-PROJECT-VERCEL-KAMU.vercel.app/api/status'; 
+        // =================================================================
+
+        async function fetchStatus() {
+            const container = document.getElementById('status-container');
+            const lastUpdateEl = document.getElementById('last-updated');
+
+            try {
+                // Fetch data dari Vercel API
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error("Gagal mengambil data dari API");
+                
+                const json = await response.json();
+                
+                // Update Waktu
+                const date = new Date(json.updated_at);
+                lastUpdateEl.innerText = `Updated: ${date.toLocaleTimeString('id-ID')}`;
+
+                container.innerHTML = ''; // Kosongkan loading
+
+                json.data.forEach(site => {
+                    let statusColor, badgeClass, statusLabel, cardBorder;
+
+                    if (site.status === 'online') {
+                        statusColor = 'bg-emerald-500';
+                        badgeClass = 'text-emerald-400 bg-emerald-950/30 border-emerald-500/20';
+                        statusLabel = 'OPERATIONAL';
+                        cardBorder = 'hover:border-emerald-500/50';
+                    } else if (site.status === 'coming_soon') {
+                        statusColor = 'bg-blue-500';
+                        badgeClass = 'text-blue-400 bg-blue-950/30 border-blue-500/20';
+                        statusLabel = 'SOON';
+                        cardBorder = 'hover:border-blue-500/50';
+                    } else {
+                        statusColor = 'bg-red-500';
+                        badgeClass = 'text-red-400 bg-red-950/30 border-red-500/20';
+                        statusLabel = 'DOWN';
+                        cardBorder = 'hover:border-red-500/50';
+                    }
+
+                    // Render Card
+                    const html = `
+                        <a href="${site.url}" target="_blank" class="glass rounded-xl p-5 block transition-all duration-300 hover:bg-zinc-800/50 border border-zinc-800 ${cardBorder} group">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="font-bold text-lg text-zinc-100 group-hover:text-white">${site.name}</div>
+                                <div class="px-2 py-0.5 text-[10px] font-bold tracking-wider border rounded ${badgeClass}">
+                                    ${statusLabel}
+                                </div>
+                            </div>
+                            <div class="text-xs text-zinc-500 font-mono truncate mb-4 opacity-70 group-hover:opacity-100 transition-opacity">
+                                ${site.url.replace('https://', '')}
+                            </div>
+                            <div class="flex items-center justify-between text-xs pt-3 border-t border-zinc-800">
+                                <div class="flex items-center gap-2">
+                                    <span class="dot ${statusColor} ${site.status === 'online' ? 'animate-blink' : ''}"></span>
+                                    <span class="text-zinc-400 capitalize">${site.status.replace('_', ' ')}</span>
+                                </div>
+                                <div class="font-mono text-zinc-600">${site.latency}</div>
+                            </div>
+                        </a>
+                    `;
+                    container.innerHTML += html;
+                });
+
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `
+                    <div class="col-span-full text-center p-8 bg-red-950/20 border border-red-900 rounded-xl">
+                        <p class="text-red-400 font-bold text-lg">Gagal Terhubung ke API</p>
+                        <p class="text-zinc-400 text-sm mt-2">Pastikan variable API_URL di index.html sudah benar dan sesuai dengan link Vercel kamu.</p>
+                        <p class="text-zinc-600 text-xs mt-4 font-mono">${API_URL}</p>
+                    </div>
+                `;
+            }
+        }
+
+        fetchStatus();
+    </script>
+</body>
+</html>
