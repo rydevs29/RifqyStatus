@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     { name: "Calory Tracker", url: "https://calory.rifqydev.my.id" },
     // Yang baru rilis (sekarang dicek statusnya)
     { name: "Summary Tool", url: "https://summary.rifqydev.my.id" },
-    { name: "Minecraft Status", url: "https://minecraft-status.rifqydev.my.id" },
+    { name: "Minecraft Status", url: "https://mc.rifqydev.my.id" },
   ];
 
   const checkStatus = async (site) => {
